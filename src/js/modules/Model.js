@@ -3,6 +3,9 @@ import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader'
 import {MeshSurfaceSampler} from 'three/examples/jsm/math/MeshSurfaceSampler'
 
+import fragment from '../shaders/fragmentShader.glsl'
+import vertex from '../shaders/vertexShader.glsl'
+
 export default class Model {
   constructor(object, nParticles = 10000) {
     this.name = object.name
@@ -74,9 +77,9 @@ export default class Model {
     )
 
     // create particles material
-    this.particlesMaterial = new THREE.PointsMaterial({
-      color: 'red',
-      size: 0.001,
+    this.particlesMaterial = new THREE.ShaderMaterial({
+      vertexShader: vertex,
+      fragmentShader: fragment,
     })
 
     this.particles = new THREE.Points(
