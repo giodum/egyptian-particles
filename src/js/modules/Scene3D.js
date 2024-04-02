@@ -8,6 +8,8 @@ import gsap from 'gsap'
 import math from 'canvas-sketch-util/math'
 import random from 'canvas-sketch-util/random'
 
+import Model from './Model'
+
 const DEV_HELPERS = true
 const DEV_WIREFRAMES = true
 
@@ -35,9 +37,6 @@ export default class Scene3D {
     document.body.appendChild(this.stats.dom)
     this.stats.dom.classList.add('stats')
 
-    // get reference to parameters
-    this.parameters = Parameters.getInstance()
-
     // init renderer and scene
     this.#initRendererAndScene()
 
@@ -54,7 +53,10 @@ export default class Scene3D {
     this.#initLights()
 
     // test scene
-    this.#testScene()
+    // this.#testScene()
+
+    // init scene
+    this.#initScene()
 
     // add event listeners
     this.eventListeners()
@@ -122,6 +124,18 @@ export default class Scene3D {
     })
     const mesh = new THREE.Mesh(geometry, material)
     this.scene.add(mesh)
+  }
+
+  #initScene() {
+    this.anubis = new Model(
+      {
+        name: 'anubis',
+        file: './models/anubis.glb',
+        scene: this.scene,
+        placeOnLoad: true,
+      },
+      50000
+    )
   }
 
   eventListeners() {
