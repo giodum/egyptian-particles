@@ -5,13 +5,12 @@ import Stats from 'stats.js'
 
 import gsap from 'gsap'
 
-import math from 'canvas-sketch-util/math'
+import math, {mod} from 'canvas-sketch-util/math'
 import random from 'canvas-sketch-util/random'
 
 import Model from './Model'
 
-const DEV_HELPERS = true
-const DEV_WIREFRAMES = true
+const DEV_HELPERS = false
 
 export default class Scene3D {
   // unique instance
@@ -41,22 +40,19 @@ export default class Scene3D {
     this.#initRendererAndScene()
 
     // init basic helpers
-    // this.#initBasicHelpers()
+    this.#initBasicHelpers()
 
     // init camera
     this.#initCamera()
 
     // init orbit control
-    this.#initOrbitControl()
+    // this.#initOrbitControl()
 
     // init lights
     this.#initLights()
 
     // init clock
     this.clock = new THREE.Clock()
-
-    // test scene
-    // this.#testScene()
 
     // init scene
     this.#initScene()
@@ -104,7 +100,7 @@ export default class Scene3D {
       0.1,
       100
     )
-    this.camera.position.set(10, 10, 10)
+    this.camera.position.set(0, 0, 5)
     this.camera.lookAt(new THREE.Vector3(0, 0, 0))
   }
 
@@ -114,33 +110,30 @@ export default class Scene3D {
   }
 
   #initLights() {
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 10)
-    this.ambientLight.position.set(0, 0, 0)
-    this.scene.add(this.ambientLight)
-  }
+    this.spotLight = new THREE.SpotLight(
+      '#eae3fa',
+      100,
+      30,
+      Math.PI / 4,
+      0.7,
+      1
+    )
+    this.spotLight.position.set(0, 4, 4)
+    this.scene.add(this.spotLight)
 
-  #testScene() {
-    const geometry = new THREE.SphereGeometry(3, 20, 20)
-    const material = new THREE.MeshStandardMaterial({
-      color: 0x444,
-      wireframe: DEV_WIREFRAMES,
-    })
-    const mesh = new THREE.Mesh(geometry, material)
-    this.scene.add(mesh)
+    if (DEV_HELPERS) {
+      this.spotLightHelper = new THREE.SpotLightHelper(this.spotLight, 'yellow')
+      this.scene.add(this.spotLightHelper)
+    }
   }
 
   #initScene() {
-    this.anubis = new Model(
-      {
-        name: 'anubis',
-        file: './models/anubis.glb',
-        scene: this.scene,
-        placeOnLoad: true,
-        color1: 'blue',
-        color2: 'pink',
-      },
-      50000
-    )
+    this.anubis = new Model({
+      name: 'anubis',
+      file: './models/anubis.glb',
+      scene: this.scene,
+      placeOnLoad: true,
+    })
   }
 
   eventListeners() {
@@ -155,14 +148,41 @@ export default class Scene3D {
   animate(time) {
     requestAnimationFrame((time) => this.animate(time))
 
-    if (this.anubis.isActive) {
-      this.anubis.particlesMaterial.uniforms.uTime.value =
-        this.clock.getElapsedTime()
+    this.stats.begin()
+
+    // move light with mouse movement
+    this.spotLight.position.x = math.mapRange(
+      this.#mouse.x,
+      0,
+      window.innerWidth,
+      -8,
+      8
+    )
+    this.spotLight.position.y = math.mapRange(
+      this.#mouse.y,
+      0,
+      window.innerHeight,
+      -4,
+      4
+    )
+
+    // update helper position
+    if (this.spotLightHelper) {
+      this.spotLightHelper.update()
     }
+
+    // animate model
+    const modTime = time / 500
+    this.anubis.mesh.position.y =
+      (Math.sin(modTime / 2) * Math.sin(modTime / 4) * Math.sin(modTime / 8)) /
+      14
+    this.anubis.mesh.rotation.y = (Math.PI / 16) * Math.sin(modTime / 4)
 
     // clear buffer and render the scene
     this.renderer.clear()
     this.renderer.render(this.scene, this.camera)
+
+    this.stats.end()
   }
 
   mouseMove(event) {

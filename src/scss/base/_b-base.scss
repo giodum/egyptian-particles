@@ -5,7 +5,8 @@
 }
 
 body {
-  background-color: black;
+  background: rgb(170,170,170);
+  background: radial-gradient(circle, rgba(40, 40, 40,1) 0%, rgba(0,0,0,1) 80%);
   font-family: 'Outfit', sans-serif;
   height: 100svh;
   line-height: 1.125;
