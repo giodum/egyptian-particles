@@ -1,87 +1,118 @@
 import * as THREE from 'three'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader'
 import {DRACOLoader} from 'three/examples/jsm/loaders/DRACOLoader'
+import {MeshSurfaceSampler} from 'three/examples/jsm/math/MeshSurfaceSampler'
+
+import fragment from '../shaders/fragmentShader.glsl'
+import vertex from '../shaders/vertexShader.glsl'
 
 export default class Model {
-  constructor(object) {
+  constructor(object, nParticles = 10000) {
     this.name = object.name
     this.file = object.file
     this.scene = object.scene
     this.placeOnLoad = object.placeOnLoad
+    this.nParticles = nParticles
 
     this.isActive = false
+
+    this.color1 = object.color1
+    this.color2 = object.color2
 
     this.loader = new GLTFLoader()
     this.dracoLoader = new DRACOLoader()
     this.dracoLoader.setDecoderPath('./draco/')
     this.loader.setDRACOLoader(this.dracoLoader)
 
-    this.textureLoader = new THREE.TextureLoader()
-
     this.init()
   }
 
   init() {
-    // promise - loading texture
-    const loadTexturePromise = new Promise((resolve, reject) => {
-      this.textureLoader.load(
-        '/maps/acoustical_shell_1k.jpg',
-        resolve,
-        undefined,
-        reject
-      )
-    })
+    this.loader.load(this.file, (response) => {
+      // get the mesh from the model
+      this.mesh = response.scene.children[0]
 
-    // promise - loading model
-    const loadModelPromise = new Promise((resolve, reject) => {
-      this.loader.load(this.file, resolve, undefined, reject)
-    })
+      // create new material
+      this.material = new THREE.MeshBasicMaterial({
+        color: 'red',
+        wireframe: true,
+      })
 
-    Promise.all([loadTexturePromise, loadModelPromise]).then(
-      ([texture, model]) => {
-        // say that equirectangolar images are used
-        texture.mapping = THREE.EquirectangularReflectionMapping
+      // substitued material
+      this.mesh.material = this.material
 
-        // save the texture
-        this.texture = texture
+      // get geometry
+      this.geometry = this.mesh.geometry
 
-        // generate proper material
-        this.material = new THREE.MeshPhysicalMaterial({
-          clearcoat: 0.9,
-          color: 0x020202,
-          ior: 1.0,
-          envMap: texture,
-          envMapIntensity: 0.05,
-          roughness: 0.0,
-        })
+      // create particles
+      this.createParticles()
 
-        console.log(texture)
-        // console.log(this.material)
-
-        // save the model mesh
-        this.mesh = model.scene.children[0]
-
-        // substitued material
-        this.mesh.material = this.material
-
-        // save geometry
-        this.geometry = this.mesh.geometry
-
-        // add object to the scene
-        if (this.placeOnLoad) {
-          this.addToScene()
-        }
+      // add object to the scene
+      if (this.placeOnLoad) {
+        this.addToScene()
       }
-    )
+    })
   }
 
   addToScene() {
-    this.scene.add(this.mesh)
+    this.scene.add(this.particles)
     this.isActive = true
   }
 
   removeFromScene() {
-    this.scene.remove(this.mesh)
+    this.scene.remove(this.particles)
     this.isActive = false
+  }
+
+  createParticles() {
+    // initialize sampler
+    const sampler = new MeshSurfaceSampler(this.mesh).build()
+
+    // create particles geometry
+    this.particlesGeometry = new THREE.BufferGeometry()
+    const particlesPosition = new Float32Array(this.nParticles * 3)
+    const particleRandomness = new Float32Array(this.nParticles * 3)
+
+    for (let i = 0; i < this.nParticles; i++) {
+      //compute the real positions through the sampler
+      const p = new THREE.Vector3()
+      sampler.sample(p)
+      particlesPosition.set([p.x, p.y, p.z], i * 3)
+
+      // generate random positions
+      particleRandomness.set(
+        [Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1],
+        i * 3
+      )
+    }
+
+    this.particlesGeometry.setAttribute(
+      'position',
+      new THREE.BufferAttribute(particlesPosition, 3)
+    )
+    this.particlesGeometry.setAttribute(
+      'aRandom',
+      new THREE.BufferAttribute(particleRandomness, 3)
+    )
+
+    // create particles material
+    this.particlesMaterial = new THREE.ShaderMaterial({
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
+      fragmentShader: fragment,
+      transparent: true,
+      vertexShader: vertex,
+      uniforms: {
+        uColor1: {value: new THREE.Color(this.color1)},
+        uColor2: {value: new THREE.Color(this.color2)},
+        uTime: {value: 0},
+      },
+    })
+
+    this.particles = new THREE.Points(
+      this.particlesGeometry,
+      this.particlesMaterial
+    )
   }
 }
