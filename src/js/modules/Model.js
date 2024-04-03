@@ -45,11 +45,11 @@ export default class Model {
         // generate proper material
         this.material = new THREE.MeshPhysicalMaterial({
           attenuationColor: 'green',
-          clearcoat: 0.7,
+          clearcoat: 0.9,
           color: 0x121212,
           ior: 2.0,
           envMap: this.texture,
-          roughness: 0.1,
+          roughness: 0.0,
         })
 
         // save the model mesh
