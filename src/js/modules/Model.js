@@ -14,6 +14,11 @@ export default class Model {
     this.placeOnLoad = object.placeOnLoad
     this.nParticles = nParticles
 
+    this.isActive = false
+
+    this.color1 = object.color1
+    this.color2 = object.color2
+
     this.loader = new GLTFLoader()
     this.dracoLoader = new DRACOLoader()
     this.dracoLoader.setDecoderPath('./draco/')
@@ -51,10 +56,12 @@ export default class Model {
 
   addToScene() {
     this.scene.add(this.particles)
+    this.isActive = true
   }
 
   removeFromScene() {
     this.scene.remove(this.particles)
+    this.isActive = false
   }
 
   createParticles() {
@@ -64,22 +71,43 @@ export default class Model {
     // create particles geometry
     this.particlesGeometry = new THREE.BufferGeometry()
     const particlesPosition = new Float32Array(this.nParticles * 3)
+    const particleRandomness = new Float32Array(this.nParticles * 3)
 
     for (let i = 0; i < this.nParticles; i++) {
+      //compute the real positions through the sampler
       const p = new THREE.Vector3()
       sampler.sample(p)
       particlesPosition.set([p.x, p.y, p.z], i * 3)
+
+      // generate random positions
+      particleRandomness.set(
+        [Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1],
+        i * 3
+      )
     }
 
     this.particlesGeometry.setAttribute(
       'position',
       new THREE.BufferAttribute(particlesPosition, 3)
     )
+    this.particlesGeometry.setAttribute(
+      'aRandom',
+      new THREE.BufferAttribute(particleRandomness, 3)
+    )
 
     // create particles material
     this.particlesMaterial = new THREE.ShaderMaterial({
-      vertexShader: vertex,
+      blending: THREE.AdditiveBlending,
+      depthTest: false,
+      depthWrite: false,
       fragmentShader: fragment,
+      transparent: true,
+      vertexShader: vertex,
+      uniforms: {
+        uColor1: {value: new THREE.Color(this.color1)},
+        uColor2: {value: new THREE.Color(this.color2)},
+        uTime: {value: 0},
+      },
     })
 
     this.particles = new THREE.Points(

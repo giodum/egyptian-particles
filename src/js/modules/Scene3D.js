@@ -41,7 +41,7 @@ export default class Scene3D {
     this.#initRendererAndScene()
 
     // init basic helpers
-    this.#initBasicHelpers()
+    // this.#initBasicHelpers()
 
     // init camera
     this.#initCamera()
@@ -51,6 +51,9 @@ export default class Scene3D {
 
     // init lights
     this.#initLights()
+
+    // init clock
+    this.clock = new THREE.Clock()
 
     // test scene
     // this.#testScene()
@@ -133,6 +136,8 @@ export default class Scene3D {
         file: './models/anubis.glb',
         scene: this.scene,
         placeOnLoad: true,
+        color1: 'blue',
+        color2: 'pink',
       },
       50000
     )
@@ -149,6 +154,11 @@ export default class Scene3D {
 
   animate(time) {
     requestAnimationFrame((time) => this.animate(time))
+
+    if (this.anubis.isActive) {
+      this.anubis.particlesMaterial.uniforms.uTime.value =
+        this.clock.getElapsedTime()
+    }
 
     // clear buffer and render the scene
     this.renderer.clear()
