@@ -39,18 +39,24 @@ export default class Model {
 
     Promise.all([loadTexturePromise, loadModelPromise]).then(
       ([texture, model]) => {
+        // say that equirectangolar images are used
+        texture.mapping = THREE.EquirectangularReflectionMapping
+
         // save the texture
         this.texture = texture
 
         // generate proper material
         this.material = new THREE.MeshPhysicalMaterial({
-          attenuationColor: 'green',
           clearcoat: 0.9,
-          color: 0x121212,
-          ior: 2.0,
-          envMap: this.texture,
+          color: 0x020202,
+          ior: 1.0,
+          envMap: texture,
+          envMapIntensity: 0.05,
           roughness: 0.0,
         })
+
+        console.log(texture)
+        // console.log(this.material)
 
         // save the model mesh
         this.mesh = model.scene.children[0]

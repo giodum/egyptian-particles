@@ -111,7 +111,7 @@ export default class Scene3D {
 
   #initLights() {
     this.spotLight = new THREE.SpotLight(
-      '#eae3fa',
+      '#d9eafc',
       100,
       30,
       Math.PI / 4,
@@ -130,7 +130,7 @@ export default class Scene3D {
   #initScene() {
     this.anubis = new Model({
       name: 'anubis',
-      file: './models/anubis.glb',
+      file: './models/pharaon.glb',
       scene: this.scene,
       placeOnLoad: true,
     })
